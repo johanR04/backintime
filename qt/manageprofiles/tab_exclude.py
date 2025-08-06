@@ -11,7 +11,7 @@
 # This file is part of the program "Back In Time" which is released under GNU
 # General Public License v2 (GPLv2). See LICENSES directory or go to
 # <https://spdx.org/licenses/GPL-2.0-or-later.html>.
-
+"""Module about the Exclude tab"""
 from PyQt6.QtWidgets import (QWidget,
                              QVBoxLayout,
                              QLabel,
@@ -274,8 +274,15 @@ class ExcludeTab(QWidget):
         self.add_exclude(pattern)
 
     def btn_exclude_file_clicked(self):
-        for path in qttools.getOpenFileNames(self, _('Exclude files')):
-            self.add_exclude(path)
+        dlg = FileDialog(
+            parent=self,
+            title=_('Exclude files'),
+            show_hidden=True,
+            allow_multiselection=True,
+            dirs_only=False)
+
+        for path in dlg.result():
+            self.add_exclude(str(path))
 
     def btn_exclude_folder_clicked(self):
         # pylint: disable=duplicate-code

@@ -2,8 +2,8 @@
 #
 # SPDX-License-Identifier: GPL-2.0-or-later
 #
-# This file is part of the program "Back In time" which is released under GNU
-# General Public License v2 (GPLv2). See file/folder LICENSE or go to
+# This file is part of the program "Back In Time" which is released under GNU
+# General Public License v2 (GPLv2). See LICENSES directory or go to
 # <https://spdx.org/licenses/GPL-2.0-or-later.html>.
 import os
 import re
@@ -141,8 +141,9 @@ under certain conditions; type `backintime --license' for details.
         #       The same goes with Gtk warnings.
 
         line_beginnings_to_exclude = [
-            "WARNING",
-            "Warning",
+            'WARNING',
+            'Warning',
+            'ERROR: Error writing status file',
         ]
 
         # Warnings currently known:
@@ -153,8 +154,8 @@ under certain conditions; type `backintime --license' for details.
         #    QT_QPA_PLATFORM=wayland to run on Wayland anyway"
 
         line_contains_to_exclude = [
-            "Gtk-WARNING",
-            "qt.qpa.plugin: Could not find the Qt platform plugin",
+            'Gtk-WARNING',
+            'qt.qpa.plugin: Could not find the Qt platform plugin',
             'qt.dbus.integration: Could not connect "org.freedesktop.IBus" '
             'to globalEngineChanged(QString)',
             'Inhibition (via',

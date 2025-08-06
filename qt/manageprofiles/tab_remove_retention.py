@@ -10,6 +10,7 @@
 # This file is part of the program "Back In Time" which is released under GNU
 # General Public License v2 (GPLv2). See LICENSES directory or go to
 # <https://spdx.org/licenses/GPL-2.0-or-later.html>.
+"""Module about the Remove & Retention policy tab"""
 from PyQt6.QtWidgets import (QCheckBox,
                              QDialog,
                              QGridLayout,
@@ -48,7 +49,7 @@ class RemoveRetentionTab(QDialog):
         self._label_keep_most_recent()
 
         # Keep named backups
-        self.cbDontRemoveNamedSnapshots = self._checkbox_keep_named()
+        self._cb_keep_named = self._checkbox_keep_named()
 
         # ---
         self._tab_layout.addWidget(
@@ -85,12 +86,12 @@ class RemoveRetentionTab(QDialog):
         self._tab_layout.addWidget(self._spinunit_remove_older, row, 2)
 
         # Retention policy
-        self.cbSmartRemove, \
-            self.cbSmartRemoveRunRemoteInBackground, \
-            self.spbKeepAll, \
-            self.spbKeepOnePerDay, \
-            self.spbKeepOnePerWeek, \
-            self.spbKeepOnePerMonth \
+        self._cb_retention_policy, \
+            self._cb_run_remote_in_background, \
+            self._spb_keep_all, \
+            self._spb_keep_one_per_day, \
+            self._spb_keep_one_per_week, \
+            self._spb_keep_one_per_month \
             = self._groupbox_retention_policy()
 
         self._checkbox_space, \
@@ -118,7 +119,7 @@ class RemoveRetentionTab(QDialog):
 
     def load_values(self):
         # don't remove named snapshots
-        self.cbDontRemoveNamedSnapshots.setChecked(
+        self._cb_keep_named.setChecked(
             self.config.dontRemoveNamedSnapshots())
 
         # remove old snapshots
@@ -130,12 +131,12 @@ class RemoveRetentionTab(QDialog):
         # smart remove
         smart_remove, keep_all, keep_one_per_day, keep_one_per_week, \
             keep_one_per_month = self.config.smartRemove()
-        self.cbSmartRemove.setChecked(smart_remove)
-        self.spbKeepAll.setValue(keep_all)
-        self.spbKeepOnePerDay.setValue(keep_one_per_day)
-        self.spbKeepOnePerWeek.setValue(keep_one_per_week)
-        self.spbKeepOnePerMonth.setValue(keep_one_per_month)
-        self.cbSmartRemoveRunRemoteInBackground.setChecked(
+        self._cb_retention_policy.setChecked(smart_remove)
+        self._spb_keep_all.setValue(keep_all)
+        self._spb_keep_one_per_day.setValue(keep_one_per_day)
+        self._spb_keep_one_per_week.setValue(keep_one_per_week)
+        self._spb_keep_one_per_month.setValue(keep_one_per_month)
+        self._cb_run_remote_in_background.setChecked(
             self.config.smartRemoveRunRemoteInBackground())
 
         # min free space
@@ -155,17 +156,17 @@ class RemoveRetentionTab(QDialog):
         )
 
         self.config.setDontRemoveNamedSnapshots(
-            self.cbDontRemoveNamedSnapshots.isChecked())
+            self._cb_keep_named.isChecked())
 
         self.config.setSmartRemove(
-            self.cbSmartRemove.isChecked(),
-            self.spbKeepAll.value(),
-            self.spbKeepOnePerDay.value(),
-            self.spbKeepOnePerWeek.value(),
-            self.spbKeepOnePerMonth.value())
+            self._cb_retention_policy.isChecked(),
+            self._spb_keep_all.value(),
+            self._spb_keep_one_per_day.value(),
+            self._spb_keep_one_per_week.value(),
+            self._spb_keep_one_per_month.value())
 
         self.config.setSmartRemoveRunRemoteInBackground(
-            self.cbSmartRemoveRunRemoteInBackground.isChecked())
+            self._cb_run_remote_in_background.isChecked())
 
         self.config.setMinFreeSpaceWithStorageSize(
             self._spin_unit_space.isEnabled(),
@@ -187,7 +188,7 @@ class RemoveRetentionTab(QDialog):
             self._spin_unit_space.set_storagesize(value, dont_touch_unit=True)
 
     def update_items_state(self, enabled):
-        self.cbSmartRemoveRunRemoteInBackground.setVisible(enabled)
+        self._cb_run_remote_in_background.setVisible(enabled)
 
     def _label_rule_execute_order(self) -> QWidget:
         icon_label = qttools.create_icon_label_info(fixed_size_widget=True)
@@ -222,7 +223,7 @@ class RemoveRetentionTab(QDialog):
 
         self._tab_layout.addWidget(wdg, self._tab_layout.rowCount(), 0, 1, 3)
 
-    def handle_link_activated(self, link):
+    def handle_link_activated(self, _link):
         qttools.open_user_manual()
 
     def _label_keep_most_recent(self) -> None:

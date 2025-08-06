@@ -53,7 +53,6 @@ from exceptions import PermissionDeniedByPolicy
 
 class Config(configfile.ConfigFileWithProfiles):
     APP_NAME = bitbase.APP_NAME
-    COPYRIGHT = bitbase.COPYRIGHT
 
     CONFIG_VERSION = 6
     """Latest or highest possible version of Back in Time's config file."""
@@ -1049,7 +1048,8 @@ class Config(configfile.ConfigFileWithProfiles):
         self.setMinFreeSpace(
             enabled=enabled,
             value=value.value(),
-            unit=value.unit.value
+            unit=value.unit.value,
+            profile_id=profile_id
         )
 
     def minFreeInodes(self, profile_id = None):
@@ -1422,12 +1422,6 @@ class Config(configfile.ConfigFileWithProfiles):
     def encfsconfigBackupFolder(self, profile_id = None):
         return os.path.join(self._LOCAL_DATA_FOLDER, 'encfsconfig_backup_%s' % self.fileId(profile_id))
 
-    def preparePath(self, path):
-        if len(path) > 1:
-            if path[-1] == os.sep:
-                path = path[: -1]
-        return path
-
     def isConfigured(self, profile_id=None) -> bool:
         """Checks if the program is configured.
 
@@ -1441,8 +1435,9 @@ class Config(configfile.ConfigFileWithProfiles):
             return True
 
         logger.debug(f'Profile ({profile_id=}) is not configured because '
-                        f'snapshot path is "{bool(path)}" and/or includes '
-                        f'are "{bool(includes)}".', self)
+                     f'backup path is "{bool(path)}" and/or includes '
+                     f'are "{bool(includes)}".', self)
+
         return False
 
     def canBackup(self, profile_id=None):

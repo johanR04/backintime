@@ -10,6 +10,7 @@
 # This file is part of the program "Back In Time" which is released under GNU
 # General Public License v2 (GPLv2). See LICENSES directory or go to
 # <https://spdx.org/licenses/GPL-2.0-or-later.html>.
+"""Module about the General tab"""
 import os
 from pathlib import Path
 from typing import Any
@@ -467,50 +468,49 @@ class GeneralTab(QDialog):
         except NoPubKeyLogin as ex:
             logger.error(str(ex), self)
 
-            if self.config.sshPrivateKeyFile_enabled():
-                question = '<p>{}</p><p>{}</p><p>{}</p><p>{}</p>'.format(
-                    _('An error occurred while attempting to log in to the '
-                      'remote host. The following error message was '
-                      'returned:'),
-                    str(ex),
-                    _('Copying the public SSH key to the remote host can '
-                      'help enable password-less login.'),
-                    _('Proceed?')
-                )
-
-                answer = messagebox.warning(text=question, as_question=True)
-                if not answer:
-                    return False
-
-                rc_copy_id = sshtools.sshCopyId(
-                    self.config.sshPrivateKeyFile() + '.pub',
-                    self.config.sshUser(),
-                    self.config.sshHost(),
-                    port=str(self.config.sshPort()),
-                    proxy_user=self.config.sshProxyUser(),
-                    proxy_host=self.config.sshProxyHost(),
-                    proxy_port=self.config.sshProxyPort(),
-                    # This will open an extra input dialog to ask for the
-                    # SSH password.
-                    askPass=tools.which('backintime-askpass'),
-                    cipher=self.config.sshCipher()
-                )
-
-                if not rc_copy_id:
-                    messagebox.warning(_(
-                        'The public SSH key could not be copied. This may '
-                        'be due to a connection or permission issue.'
-                    ))
-                    return False
-
-                # --- DEV NOTE TODO ---
-                # Why this recursive call?
-                return self._parent_dialog.saveProfile()
-
-            else:
+            if not self.config.sshPrivateKeyFile_enabled():
                 # Configured without explicit SSH key file
                 messagebox.critical(self, str(ex))
                 return False
+
+            question = '<p>{}</p><p>{}</p><p>{}</p><p>{}</p>'.format(
+                _('An error occurred while attempting to log in to the '
+                    'remote host. The following error message was '
+                    'returned:'),
+                str(ex),
+                _('Copying the public SSH key to the remote host can '
+                    'help enable password-less login.'),
+                _('Proceed?')
+            )
+
+            answer = messagebox.warning(text=question, as_question=True)
+            if not answer:
+                return False
+
+            rc_copy_id = sshtools.sshCopyId(
+                self.config.sshPrivateKeyFile() + '.pub',
+                self.config.sshUser(),
+                self.config.sshHost(),
+                port=str(self.config.sshPort()),
+                proxy_user=self.config.sshProxyUser(),
+                proxy_host=self.config.sshProxyHost(),
+                proxy_port=self.config.sshProxyPort(),
+                # This will open an extra input dialog to ask for the
+                # SSH password.
+                askPass=tools.which('backintime-askpass'),
+                cipher=self.config.sshCipher()
+            )
+
+            if not rc_copy_id:
+                messagebox.warning(_(
+                    'The public SSH key could not be copied. This may '
+                    'be due to a connection or permission issue.'
+                ))
+                return False
+
+            # --- DEV NOTE TODO ---
+            # Why this recursive call?
+            return self._parent_dialog.saveProfile()
 
         except KnownHost as ex:
             logger.error(str(ex), self)
@@ -607,26 +607,30 @@ class GeneralTab(QDialog):
         return wdg
 
     def _slot_snapshots_path_clicked(self):
-        old_path = self.editSnapshotsPath.text()
+        old_path = Path(self.editSnapshotsPath.text())
 
-        path = str(qttools.getExistingDirectory(
-            self,
-            _('Where to save backups'),
-            self.editSnapshotsPath.text()
-        ))
+        dlg = FileDialog(
+            parent=self,
+            title=_('Where to save backups'),
+            show_hidden=True,
+            allow_multiselection=False,
+            dirs_only=True,
+            start_dir=old_path)
+        path = dlg.result()
 
-        if path:
+        if not path:
+            return
 
-            if old_path and old_path != path:
+        if old_path and old_path != path:
 
-                answer = messagebox.question(
-                    text=_('Really change the backup directory?'),
-                    widget_to_center_on=self)
+            answer = messagebox.question(
+                text=_('Really change the backup directory?'),
+                widget_to_center_on=self)
 
-                if not answer:
-                    return
+            if not answer:
+                return
 
-            self.editSnapshotsPath.setText(self.config.preparePath(path))
+        self.editSnapshotsPath.setText(str(path))
 
     def _slot_ssh_private_key_file_clicked(self):
         key_file = self.key_selector.get_key()

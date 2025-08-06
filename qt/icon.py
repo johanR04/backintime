@@ -5,6 +5,10 @@
 # This file is part of the program "Back In Time" which is released under GNU
 # General Public License v2 (GPLv2). See LICENSES directory or go to
 # <https://spdx.org/licenses/GPL-2.0-or-later.html>.
+"""Rudimentary icon cachging.
+
+Will be refactored soon.
+"""
 from PyQt6.QtGui import QIcon
 import logger
 
@@ -23,7 +27,7 @@ themes_to_try = (
     'yaru',
     'oxygen'
 )
-icon_name_to_check = 'document-save'
+ICON_NAME_TO_CHECK = 'document-save'
 
 for theme in themes_to_try:
     # Check if the current theme does provide the BiT "logo" icon
@@ -32,8 +36,8 @@ for theme in themes_to_try:
     # Note: "hicolor" does currently (2022) use different icon names
     # (not fully compliant to the freedesktop.org spec)
     # and is not recommended as main theme (it is meant as fallback only).
-    if not QIcon.fromTheme(icon_name_to_check).isNull():
-        logger.debug(f'Icon "{icon_name_to_check}" found in '
+    if not QIcon.fromTheme(ICON_NAME_TO_CHECK).isNull():
+        logger.debug(f'Icon "{ICON_NAME_TO_CHECK}" found in '
                      'installed theme: {QIcon.themeName()}')
         break
 
@@ -42,7 +46,7 @@ for theme in themes_to_try:
     logger.debug(f'Probing theme: "{theme}" '
                  f'(activated as "{QIcon.themeName()}")')
 
-if QIcon.fromTheme(icon_name_to_check).isNull():
+if QIcon.fromTheme(ICON_NAME_TO_CHECK).isNull():
     logger.error('No supported theme installed (missing icons). '
                  'Please consult the project web site for instructions '
                  'how to fix this.')
@@ -71,7 +75,8 @@ TAKE_SNAPSHOT       = BIT_LOGO
 PAUSE               = QIcon.fromTheme('media-playback-pause')
 RESUME              = QIcon.fromTheme('media-playback-start')
 STOP                = QIcon.fromTheme('media-playback-stop')
-REFRESH_SNAPSHOT    = QIcon.fromTheme('view-refresh')
+REFRESH = QIcon.fromTheme('view-refresh')
+REFRESH_SNAPSHOT = REFRESH
 SNAPSHOT_NAME       = QIcon.fromTheme('stock_edit',
                       QIcon.fromTheme('gtk-edit',
                       QIcon.fromTheme('edit-rename',

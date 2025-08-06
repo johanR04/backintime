@@ -8,6 +8,7 @@
 # This file is part of the program "Back In Time" which is released under GNU
 # General Public License v2 (GPLv2). See LICENSES directory or go to
 # <https://spdx.org/licenses/GPL-2.0-or-later.html>.
+"""Separate application managing the systray icon"""
 import sys
 import os
 import subprocess
@@ -22,25 +23,23 @@ if not os.getenv('DISPLAY', ''):
     os.putenv('DISPLAY', ':0.0')
 
 import qttools
-qttools.registerBackintimePath('common')
-
+qttools.register_backintime_path('common')
 import logger
-
 # Workaround until the codebase allows a single place to init all translations
 import tools
 tools.initiate_translation(None)
-
 import snapshots
 import progress
 import logviewdialog
 import encfstools
-
 from PyQt6.QtCore import QTimer
 from PyQt6.QtWidgets import QSystemTrayIcon, QMenu, QProgressBar, QWidget
 from PyQt6.QtGui import QRegion
 
 
 class QtSysTrayIcon:
+    """Application instance for the Back In Time systray icon"""
+
     def __init__(self):
 
         self.snapshots = snapshots.Snapshots()
@@ -58,7 +57,6 @@ class QtSysTrayIcon:
         self.qapp.setQuitOnLastWindowClosed(False)
 
         import icon
-        self.icon = icon  # What does this code do? Make the import accessible?
         self.qapp.setWindowIcon(icon.BIT_LOGO)
 
         self.status_icon = QSystemTrayIcon(icon.BIT_LOGO)
@@ -68,7 +66,6 @@ class QtSysTrayIcon:
             _('Profile: {profile_name}').format(
                 profile_name=self.config.profileName())
         )
-        qttools.setFontBold(self.menuProfileName)
         self.contextMenu.addSeparator()
 
         self.menuStatusMessage = self.contextMenu.addAction(_('Done'))
@@ -108,18 +105,7 @@ class QtSysTrayIcon:
         self.startBIT.triggered.connect(self.onStartBIT)
         self.status_icon.setContextMenu(self.contextMenu)
 
-        self.pixmap = icon.BIT_LOGO.pixmap(24)
-        self.progressBar = QProgressBar()
-        self.progressBar.setMinimum(0)
-        self.progressBar.setMaximum(100)
-        self.progressBar.setValue(0)
-        self.progressBar.setTextVisible(False)
-        self.progressBar.resize(24, 6)
-        self.progressBar.render(
-            self.pixmap,
-            sourceRegion=QRegion(0, -14, 24, 6),
-            flags=QWidget.RenderFlag.DrawChildren
-        )
+        self.progressBar = self._create_progress_bar()
 
         self.first_error = self.config.notify()
         self.popup = None
@@ -127,6 +113,26 @@ class QtSysTrayIcon:
 
         self.timer = QTimer()
         self.timer.timeout.connect(self.updateInfo)
+
+    def _create_progress_bar(self) -> QProgressBar:
+        bar = QProgressBar()
+
+        bar.setMinimum(0)
+        bar.setMaximum(100)
+        bar.setValue(0)
+
+        bar.setTextVisible(False)
+
+        bar.resize(24, 6)
+
+        import icon
+        bar.render(
+            icon.BIT_LOGO.pixmap(24),
+            sourceRegion=QRegion(0, -14, 24, 6),
+            flags=QWidget.RenderFlag.DrawChildren
+        )
+
+        return bar
 
     def prepareExit(self):
         self.timer.stop()

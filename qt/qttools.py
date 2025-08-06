@@ -26,7 +26,7 @@ import subprocess
 from typing import Union, Iterable, Callable
 from contextlib import contextmanager
 from tempfile import NamedTemporaryFile
-from PyQt6.QtGui import QDesktopServices, QFont, QIcon
+from PyQt6.QtGui import QDesktopServices, QIcon
 from PyQt6.QtCore import (QEvent,
                           QLibraryInfo,
                           QLocale,
@@ -42,37 +42,18 @@ from PyQt6.QtWidgets import (QApplication,
                              QSystemTrayIcon,
                              QWidget)
 from packaging.version import Version
-from qttools_path import registerBackintimePath
-registerBackintimePath('common')
+from qttools_path import register_backintime_path
+register_backintime_path('common')
 import tools  # noqa: E402
 import logger  # noqa: E402
 import bitbase  # noqa: E402
 import version  # noqa: E402
 import messagebox
-from filedialog import FileDialog
-
-# |---------------|
-# | Font handling |
-# |---------------|
 
 
-def fontBold(font):
-    font.setWeight(QFont.Weight.Bold)
-    return font
-
-
-def setFontBold(widget):
-    widget.setFont(fontBold(widget.font()))
-
-
-def fontNormal(font):
-    font.setWeight(QFont.Weight.Normal)
-    return font
-
-
-def setFontNormal(widget):
-    widget.setFont(fontNormal(widget.font()))
-
+# |--------------------------------|
+# | Widget modification & creation |
+# |--------------------------------|
 
 def can_render(string, widget):
     """Check if the string can be rendered by the font used by the widget.
@@ -94,10 +75,6 @@ def can_render(string, widget):
 
     return True
 
-
-# |--------------------------------|
-# | Widget modification & creation |
-# |--------------------------------|
 
 _REX_RICHTEXT = re.compile(
     # begin of line
@@ -198,6 +175,7 @@ def update_combo_profiles(config, combo_profiles, current_profile_id):
 def create_icon_label(
         icon_type: QStyle.StandardPixmap,
         icon_size: QStyle.PixelMetric = QStyle.PixelMetric.PM_LargeIconSize,
+        icon_scale_factor: float | int = None,
         fixed_size_widget: bool = False) -> QLabel:
     """Return a ``QLabel`` instance containing an icon.
 
@@ -213,6 +191,9 @@ def create_icon_label(
     ico = style.standardIcon(icon_type)
     sz = style.pixelMetric(icon_size)
 
+    if icon_scale_factor:
+        sz = int(sz * icon_scale_factor)
+
     pixmap = ico.pixmap(sz)
 
     label = QLabel()
@@ -226,6 +207,7 @@ def create_icon_label(
 
 def create_icon_label_info(
         icon_size: QStyle.PixelMetric = QStyle.PixelMetric.PM_LargeIconSize,
+        icon_scale_factor: float | int = None,
         fixed_size_widget: bool = False) -> QLabel:
     """Return a QLabel with an info icon.
 
@@ -234,11 +216,13 @@ def create_icon_label_info(
     return create_icon_label(
         icon_type=QStyle.StandardPixmap.SP_MessageBoxInformation,
         icon_size=icon_size,
+        icon_scale_factor=icon_scale_factor,
         fixed_size_widget=fixed_size_widget)
 
 
 def create_icon_label_warning(
         icon_size: QStyle.PixelMetric = QStyle.PixelMetric.PM_LargeIconSize,
+        icon_scale_factor: float | int = None,
         fixed_size_widget: bool = False) -> QLabel:
     """Return a QLabel with a warning icon.
 
@@ -247,6 +231,7 @@ def create_icon_label_warning(
     return create_icon_label(
         icon_type=QStyle.StandardPixmap.SP_MessageBoxWarning,
         icon_size=icon_size,
+        icon_scale_factor=icon_scale_factor,
         fixed_size_widget=fixed_size_widget)
 
 
@@ -282,7 +267,7 @@ class MouseButtonEventFilter(QObject):
 
         super().__init__()
 
-    def eventFilter(self, receiver, event):
+    def eventFilter(self, receiver: QObject, event: QEvent):
         """Catch global input events."""
 
         # not a mouse press event
@@ -337,12 +322,17 @@ def open_man_page(manpage: str) -> None:
         logger.error(str(exc))
 
     else:
+        # Workaround until min Python version is 3.12
+        extra_args = {}
+        if sys.version_info >= (3, 12):
+            extra_args['delete_on_close'] = False
+
         # Write content to temp text file
         with NamedTemporaryFile(mode='w',
                                 encoding='utf-8',
                                 suffix='.txt',
                                 delete=False,
-                                delete_on_close=False) as temp_file:
+                                **extra_args) as temp_file:
             temp_file.write(content)
 
         # open text file with associated default application
@@ -356,7 +346,7 @@ def user_manual_uri() -> str:
     """
     uri = bitbase.USER_MANUAL_LOCAL_PATH.as_uri() \
         if bitbase.USER_MANUAL_LOCAL_AVAILABLE \
-        else bitbase.USER_MANUAL_ONLINE_URL
+        else bitbase.URL_USER_MANUAL
 
     return uri
 
@@ -368,71 +358,6 @@ def open_user_manual() -> None:
     opened.
     """
     open_url(user_manual_uri())
-
-
-def getExistingDirectories(parent, title):
-    """Workaround for selecting multiple directories adopted from
-    http://www.qtcentre.org/threads/34226-QFileDialog-select-multiple-directories?p=158482#post158482
-    This also give control about hidden folders
-    """
-
-    dlg = FileDialog(parent,
-                     title=title,
-                     show_hidden=True,
-                     allow_multiselection=True,
-                     dirs_only=True)
-    result = dlg.result()
-
-    if result:
-        return result
-    return [str(), ]
-
-
-def getExistingDirectory(parent, title, start_dir=None):
-    """Workaround to give control about hidden folders"""
-    dlg = FileDialog(parent,
-                     title=title,
-                     show_hidden=True,
-                     allow_multiselection=False,
-                     dirs_only=True,
-                     start_dir=start_dir)
-    result = dlg.result()
-
-    if result:
-        return str(result)
-
-    return str()
-
-
-def getOpenFileNames(parent, title):
-    """
-    Workaround to give control about hidden files
-    """
-    dlg = FileDialog(parent,
-                     title=title,
-                     show_hidden=True,
-                     allow_multiselection=True,
-                     dirs_only=False)
-    result = dlg.result()
-
-    if result:
-        return [str(r) for r in result]
-    return [str(), ]
-
-
-def getOpenFileName(parent, title, start_dir = None):
-    """Workaround to give control about hidden files"""
-    dlg = FileDialog(parent,
-                     title=title,
-                     show_hidden=True,
-                     allow_multiselection=False,
-                     dirs_only=False,
-                     start_dir=start_dir)
-    result = dlg.result()
-
-    if result:
-        return str(result)
-    return str()
 
 
 def _show_qt_debug_info(qapp):
@@ -503,7 +428,7 @@ def createQApplication(app_name=bitbase.APP_NAME):
 
     try:
 
-        if tools.isRoot():
+        if bitbase.IS_IN_ROOT_MODE:
             qapp.setApplicationName(app_name + " (root)")
             qapp.setDesktopFileName("backintime-qt-root")
 
@@ -514,7 +439,7 @@ def createQApplication(app_name=bitbase.APP_NAME):
         logger.warning('Could not set App ID (required for Wayland App icon '
                        f'and more). Reason: {exc}')
 
-    if (os.geteuid() == 0
+    if (bitbase.IS_IN_ROOT_MODE
             and qapp.style().objectName().lower() == 'windows'
             and 'GTK+' in QStyleFactory.keys()):
 

@@ -11,7 +11,9 @@ General Public License v2 (GPLv2). See LICENSES directory or go to
 [![Mastodon @backintime@fosstodon.org](doc/maintain/_images/badge_mastodon.svg)](https://fosstodon.org/@backintime)
 
 [![Build Status](https://app.travis-ci.com/bit-team/backintime.svg)](https://app.travis-ci.com/bit-team/backintime)
+<!--
 [![Source code documentation Status](https://readthedocs.org/projects/backintime-dev/badge/?version=latest)](https://backintime-dev.readthedocs.io)
+-->
 [![User manual Status](https://readthedocs.org/projects/backintime/badge/?version=latest)](https://backintime.readthedocs.io)
 [![Translation status](https://translate.codeberg.org/widget/backintime/common/svg-badge.svg)](https://translate.codeberg.org/engage/backintime)
 [![REUSE status](https://api.reuse.software/badge/github.com/bit-team/backintime)](https://api.reuse.software/info/github.com/bit-team/backintime)
@@ -82,6 +84,7 @@ features. This work is carried out voluntarily during their limited spare time.
  * [FAQ - Frequently Asked Questions](FAQ.md)
  * [End user documentation](https://backintime.readthedocs.org/) (not totally up-to-date)
  * [Source code documentation for developers](https://backintime-dev.readthedocs.org)
+   (**Disabled** and not up-2-tdate. Please open an issue if you need to use it.)
 
 # Contact & Social
 
@@ -100,15 +103,6 @@ Use their repositories to install it. If you want to contribute or using the
 latest development version of _Back In Time_ please see section
 [Build & Install](CONTRIBUTING.md#build--install) in
 [`CONTRIBUTING.md`](CONTRIBUTING.md). Also the dependencies are described there.
-
-## Alternative installation options
-Besides the repositories of the official GNU/Linux distributions, there are
-other alternative installation options provided and maintained by third
-parties. Use them at your own risk and please contact that third party
-maintainers if you encounter problems.
-
-- [@jean-christophe-manciot](https://github.com/jean-christophe-manciot)'s PPA distributing [_Back In Time_ for the latest stable Ubuntu release](https://git.sdxlive.com/PPA/about). See [PPA requirements](https://git.sdxlive.com/PPA/about/#requirements) and [install instructions](https://git.sdxlive.com/PPA/about/#installing-the-ppa).
-- The Arch User Repository ([AUR](https://aur.archlinux.org/)) does offer [some packages](https://aur.archlinux.org/packages?K=backintime).
 
 # Known Problems and Workarounds
 
@@ -171,4 +165,4 @@ Please read [`LICENSES.md`](LICENSES.md).
 
 ---
 
-<sub>April 2025</sub>
+<sub>August 2025</sub>

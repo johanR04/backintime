@@ -8,7 +8,7 @@
 # SPDX-License-Identifier: GPL-2.0-or-later
 #
 # This file is part of the program "Back In Time" which is released under GNU
-# General Public License v2 (GPLv2). See file/folder LICENSE or go to
+# General Public License v2 (GPLv2). See LICENSES directory or go to
 # <https://spdx.org/licenses/GPL-2.0-or-later.html>.
 """Tests about the tools module."""
 import os
@@ -16,7 +16,6 @@ import sys
 import subprocess
 import random
 import pathlib
-import gzip
 import stat
 import signal
 import unittest
@@ -41,157 +40,26 @@ UDEVADM_HAS_UUID = subprocess.Popen(
     stdout=subprocess.PIPE,
     stderr=subprocess.DEVNULL).communicate()[0].find(b'ID_FS_UUID=') > 0
 
-RSYNC_INSTALLED = tools.checkCommand('rsync')
 
-RSYNC_307_VERSION = """rsync  version 3.0.7  protocol version 30
-Copyright (C) 1996-2009 by Andrew Tridgell, Wayne Davison, and others.
-Web site: http://rsync.samba.org/
-Capabilities:
-    64-bit files, 64-bit inums, 32-bit timestamps, 64-bit long ints,
-    socketpairs, hardlinks, symlinks, IPv6, batchfiles, inplace,
-    append, ACLs, xattrs, iconv, symtimes
-
-rsync comes with ABSOLUTELY NO WARRANTY.  This is free software, and you
-are welcome to redistribute it under certain conditions.  See the GNU
-General Public License for details.
-"""
-
-RSYNC_310_VERSION = """rsync  version 3.1.0  protocol version 31
-Copyright (C) 1996-2013 by Andrew Tridgell, Wayne Davison, and others.
-Web site: http://rsync.samba.org/
-Capabilities:
-    64-bit files, 64-bit inums, 64-bit timestamps, 64-bit long ints,
-    socketpairs, hardlinks, symlinks, IPv6, batchfiles, inplace,
-    append, ACLs, xattrs, iconv, symtimes, prealloc
-
-rsync comes with ABSOLUTELY NO WARRANTY.  This is free software, and you
-are welcome to redistribute it under certain conditions.  See the GNU
-General Public License for details.
-"""
-
-
-class TestTools(generic.TestCase):
-    """
-    All functions test here come from tools.py
-    """
-
-    def setUp(self):
-        super().setUp()
-        self.subproc = None
-
-    def tearDown(self):
-        super().tearDown()
-        self._kill_process()
-
-    def _create_process(self, *args):
-        dummyPath = os.path.join(os.path.dirname(__file__), generic.DUMMY)
-        cmd = [dummyPath]
-        cmd.extend(args)
-        self.subproc = subprocess.Popen(cmd)
-        sleep(0.1)
-        return self.subproc.pid
-
-    def _kill_process(self):
-        if self.subproc:
-            self.subproc.kill()
-            self.subproc.wait()
-        self.subproc = None
-
-    def test_sharePath(self):
-        share = tools.sharePath()
-        self.assertTrue(share.endswith('share'), 'share = {}'.format(share))
-
-    def test_backintimePath(self):
-        path = tools.backintimePath('common')
+class Basics(unittest.TestCase):
+    def test_as_backintime_path(self):
+        path = tools.as_backintime_path('common')
         self.assertIn(path, __file__)
 
-    def test_registerBackintimePath(self):
-        path = tools.backintimePath('foo')
-        tools.registerBackintimePath('foo')
+    def test_register_backintime_path(self):
+        path = tools.as_backintime_path('foo')
+        tools.register_backintime_path('foo')
+
         self.assertIn(path, sys.path)
         sys.path.remove(path)
 
-    def test_runningFromSource(self):
-        self.assertTrue(tools.runningFromSource())
-
-    def test_addSourceToPathEnviron(self):
-        source = tools.backintimePath('common')
-        path = [x for x in os.getenv('PATH').split(':') if x != source]
-        os.environ['PATH'] = ':'.join(path)
-
-        tools.addSourceToPathEnviron()
-        self.assertIn(source, os.environ['PATH'])
-
-    def test_readFile(self):
-        """
-        Test the function readFile
-        """
-        test_tools_file = os.path.abspath(__file__)
-        test_directory = os.path.dirname(test_tools_file)
-        non_existing_file = os.path.join(test_directory, "nonExistingFile")
-
-        self.assertIsInstance(tools.readFile(test_tools_file), str)
-        self.assertIsNone(tools.readFile(non_existing_file))
-
-        with NamedTemporaryFile('wt') as tmp:
-            tmp.write('foo\nbar')
-            tmp.flush()
-            self.assertIsInstance(tools.readFile(tmp.name), str)
-            self.assertEqual(tools.readFile(tmp.name), 'foo\nbar')
-
-        tmp_gz = NamedTemporaryFile().name
-        with gzip.open(tmp_gz + '.gz', 'wt') as f:
-            f.write('foo\nbar')
-            f.flush()
-        self.assertIsInstance(tools.readFile(tmp_gz), str)
-        self.assertEqual(tools.readFile(tmp_gz), 'foo\nbar')
-        os.remove(tmp_gz + '.gz')
-
-    def test_readFileLines(self):
-        """
-        Test the function readFileLines
-        """
-        test_tools_file = os.path.abspath(__file__)
-        test_directory = os.path.dirname(test_tools_file)
-        non_existing_file = os.path.join(test_directory, "nonExistingFile")
-
-        output = tools.readFileLines(test_tools_file)
-        self.assertIsInstance(output, list)
-        self.assertGreaterEqual(len(output), 1)
-        self.assertIsInstance(output[0], str)
-        self.assertIsNone(tools.readFileLines(non_existing_file))
-
-        with NamedTemporaryFile('wt') as tmp:
-            tmp.write('foo\nbar')
-            tmp.flush()
-            self.assertIsInstance(tools.readFileLines(tmp.name), list)
-            self.assertListEqual(tools.readFileLines(tmp.name), ['foo', 'bar'])
-
-        tmp_gz = NamedTemporaryFile().name
-        with gzip.open(tmp_gz + '.gz', 'wt') as f:
-            f.write('foo\nbar')
-            f.flush()
-        self.assertIsInstance(tools.readFileLines(tmp_gz), list)
-        self.assertEqual(tools.readFileLines(tmp_gz), ['foo', 'bar'])
-        os.remove(tmp_gz + '.gz')
-
-    def test_checkCommand(self):
-        """
-        Test the function checkCommand
-        """
-        self.assertFalse(tools.checkCommand(''))
-        self.assertFalse(tools.checkCommand("notExistedCommand"))
-        self.assertTrue(tools.checkCommand("ls"))
-        self.assertTrue(tools.checkCommand('backintime'))
-
     def test_which(self):
-        """
-        Test the function which
-        """
-        self.assertRegex(tools.which("ls"), r'/.*/ls')
+        self.assertRegex(tools.which('ls'), r'/.*/ls')
+
         self.assertEqual(tools.which('backintime'),
                          os.path.join(os.getcwd(), 'backintime'))
-        self.assertIsNone(tools.which("notExistedCommand"))
+
+        self.assertIsNone(tools.which('notExistedCommand'))
 
     def test_makeDirs(self):
         self.assertFalse(tools.makeDirs('/'))
@@ -221,10 +89,44 @@ class TestTools(generic.TestCase):
                     '{0:o}'.format(os.stat(path).st_mode & 0o777),
                     '{0:o}'.format(mode), msg)
 
-    def test_pids(self):
-        pids = tools.pids()
-        self.assertGreater(len(pids), 0)
-        self.assertIn(os.getpid(), pids)
+
+class General(generic.TestCase):
+    def setUp(self):
+        super().setUp()
+        self.subproc = None
+
+    def tearDown(self):
+        super().tearDown()
+        self._kill_process()
+
+    def _create_process(self, *args):
+        dummyPath = os.path.join(os.path.dirname(__file__), generic.DUMMY)
+        cmd = [dummyPath]
+        cmd.extend(args)
+        self.subproc = subprocess.Popen(cmd)
+        sleep(0.1)
+        return self.subproc.pid
+
+    def _kill_process(self):
+        if self.subproc:
+            self.subproc.kill()
+            self.subproc.wait()
+        self.subproc = None
+
+    def test_sharePath(self):
+        share = tools.sharePath()
+        self.assertTrue(share.endswith('share'), 'share = {}'.format(share))
+
+    def test_runningFromSource(self):
+        self.assertTrue(tools.runningFromSource())
+
+    def test_addSourceToPathEnviron(self):
+        source = tools.as_backintime_path('common')
+        path = [x for x in os.getenv('PATH').split(':') if x != source]
+        os.environ['PATH'] = ':'.join(path)
+
+        tools.addSourceToPathEnviron()
+        self.assertIn(source, os.environ['PATH'])
 
     def test_processStat(self):
         pid = self._create_process()
@@ -301,72 +203,12 @@ class TestTools(generic.TestCase):
             self.fail(
                 'tools.ckeck_x_server() raised exception {}'.format(str(e)))
 
-    def test_preparePath(self):
-        path_with_slash_at_begin = "/test/path"
-        path_without_slash_at_begin = "test/path"
-        path_with_slash_at_end = "/test/path/"
-        path_without_slash_at_end = "/test/path"
-        self.assertEqual(
-            tools.preparePath(path_with_slash_at_begin),
-            path_with_slash_at_begin)
-        self.assertEqual(
-            tools.preparePath(path_without_slash_at_begin),
-            path_with_slash_at_begin)
-        self.assertEqual(
-            tools.preparePath(path_without_slash_at_end),
-            path_without_slash_at_end)
-        self.assertEqual(
-            tools.preparePath(path_with_slash_at_end),
-            path_without_slash_at_end)
-
     def test_powerStatusAvailable(self):
         if tools.processExists('upowerd') and not generic.ON_TRAVIS:
             self.assertTrue(tools.powerStatusAvailable())
         else:
             self.assertFalse(tools.powerStatusAvailable())
         self.assertIsInstance(tools.onBattery(), bool)
-
-    def test_rsyncCaps(self):
-        if RSYNC_INSTALLED:
-            caps = tools.rsyncCaps()
-            self.assertIsInstance(caps, list)
-            self.assertGreaterEqual(len(caps), 1)
-
-        self.assertListEqual(tools.rsyncCaps(data=RSYNC_307_VERSION),
-                             ['64-bit files',
-                              '64-bit inums',
-                              '32-bit timestamps',
-                              '64-bit long ints',
-                              'socketpairs',
-                              'hardlinks',
-                              'symlinks',
-                              'IPv6',
-                              'batchfiles',
-                              'inplace',
-                              'append',
-                              'ACLs',
-                              'xattrs',
-                              'iconv',
-                              'symtimes'])
-
-        self.assertListEqual(tools.rsyncCaps(data=RSYNC_310_VERSION),
-                             ['progress2',
-                              '64-bit files',
-                              '64-bit inums',
-                              '64-bit timestamps',
-                              '64-bit long ints',
-                              'socketpairs',
-                              'hardlinks',
-                              'symlinks',
-                              'IPv6',
-                              'batchfiles',
-                              'inplace',
-                              'append',
-                              'ACLs',
-                              'xattrs',
-                              'iconv',
-                              'symtimes',
-                              'prealloc'])
 
     def test_md5sum(self):
         with NamedTemporaryFile() as f:
@@ -375,17 +217,6 @@ class TestTools(generic.TestCase):
 
             self.assertEqual(tools.md5sum(f.name),
                              'acbd18db4cc2f85cedef654fccc4a4d8')
-
-    def test_checkCronPattern(self):
-        self.assertTrue(tools.checkCronPattern('0'))
-        self.assertTrue(tools.checkCronPattern('0,10,13,15,17,20,23'))
-        self.assertTrue(tools.checkCronPattern('*/6'))
-        self.assertFalse(tools.checkCronPattern('a'))
-        self.assertFalse(tools.checkCronPattern(' 1'))
-        self.assertFalse(tools.checkCronPattern('0,10,13,1a,17,20,23'))
-        self.assertFalse(tools.checkCronPattern('0,10,13, 15,17,20,23'))
-        self.assertFalse(tools.checkCronPattern('*/6,8'))
-        self.assertFalse(tools.checkCronPattern('*/6 a'))
 
     def test_mountpoint(self):
         self.assertEqual(tools.mountpoint('/nonExistingFolder/foo/bar'), '/')
@@ -398,49 +229,6 @@ class TestTools(generic.TestCase):
         self.assertEqual(
             tools.decodeOctalEscape('/mnt/path\\040with\\040space'),
             '/mnt/path with space')
-
-    def test_mountArgs(self):
-        rootArgs = tools.mountArgs('/')
-        self.assertIsInstance(rootArgs, list)
-        self.assertGreaterEqual(len(rootArgs), 3)
-        self.assertEqual(rootArgs[1], '/')
-
-        procArgs = tools.mountArgs('/proc')
-        self.assertGreaterEqual(len(procArgs), 3)
-        self.assertEqual(procArgs[0], 'proc')
-        self.assertEqual(procArgs[1], '/proc')
-        self.assertEqual(procArgs[2], 'proc')
-
-    def test_isRoot(self):
-        self.assertIsInstance(tools.isRoot(), bool)
-
-    def test_usingSudo(self):
-        self.assertIsInstance(tools.usingSudo(), bool)
-
-    def test_patternHasNotEncryptableWildcard(self):
-        self.assertFalse(tools.patternHasNotEncryptableWildcard('foo'))
-        self.assertFalse(tools.patternHasNotEncryptableWildcard('/foo'))
-        self.assertFalse(tools.patternHasNotEncryptableWildcard('foo/*/bar'))
-        self.assertFalse(tools.patternHasNotEncryptableWildcard('foo/**/bar'))
-        self.assertFalse(tools.patternHasNotEncryptableWildcard('*/foo'))
-        self.assertFalse(tools.patternHasNotEncryptableWildcard('**/foo'))
-        self.assertFalse(tools.patternHasNotEncryptableWildcard('foo/*'))
-        self.assertFalse(tools.patternHasNotEncryptableWildcard('foo/**'))
-
-        self.assertTrue(tools.patternHasNotEncryptableWildcard('foo?'))
-        self.assertTrue(tools.patternHasNotEncryptableWildcard('foo[1-2]'))
-        self.assertTrue(tools.patternHasNotEncryptableWildcard('foo*'))
-        self.assertTrue(tools.patternHasNotEncryptableWildcard('*foo'))
-        self.assertTrue(tools.patternHasNotEncryptableWildcard('**foo'))
-        self.assertTrue(tools.patternHasNotEncryptableWildcard('*.foo'))
-        self.assertTrue(tools.patternHasNotEncryptableWildcard('foo*bar'))
-        self.assertTrue(tools.patternHasNotEncryptableWildcard('foo**bar'))
-        self.assertTrue(tools.patternHasNotEncryptableWildcard('foo*/bar'))
-        self.assertTrue(tools.patternHasNotEncryptableWildcard('foo**/bar'))
-        self.assertTrue(tools.patternHasNotEncryptableWildcard('foo/*bar'))
-        self.assertTrue(tools.patternHasNotEncryptableWildcard('foo/**bar'))
-        self.assertTrue(tools.patternHasNotEncryptableWildcard('foo/*/bar*'))
-        self.assertTrue(tools.patternHasNotEncryptableWildcard('*foo/*/bar'))
 
     def test_readTimeStamp(self):
         with NamedTemporaryFile('wt') as f:
@@ -496,7 +284,97 @@ class TestTools(generic.TestCase):
             'echo start;echo foo;echo foo;echo foo;echo end')
 
 
-class EscapeIPv6(generic.TestCase):
+class CheckCronPattern(unittest.TestCase):
+    def test_valid(self):
+        to_test = (
+            '0',
+            '0,10,13,15,17,20,23',
+            '*/6'
+        )
+
+        for sut in to_test:
+            self.assertTrue(tools.checkCronPattern(sut))
+
+    def test_not_valid(self):
+        to_test = (
+            'a',
+            ' 1',
+            '0,10,13,1a,17,20,23',
+            '0,10,13, 15,17,20,23',
+            '*/6,8',
+            '*/6 a'
+        )
+
+        for sut in to_test:
+            self.assertFalse(tools.checkCronPattern(sut))
+
+
+class CheckCommand(unittest.TestCase):
+    def test_empty(self):
+        self.assertFalse(tools.checkCommand(''))
+
+    def test_not_existing(self):
+        self.assertFalse(tools.checkCommand('notExistedCommand'))
+
+    def test_existing(self):
+        for sut in ('ls', 'backintime'):
+            self.assertTrue(tools.checkCommand(sut))
+
+
+class MountArgs(unittest.TestCase):
+    def test_root_fs(self):
+        sut = tools.mountArgs('/')
+        self.assertIsInstance(sut, list)
+        self.assertGreaterEqual(len(sut), 3)
+        self.assertEqual(sut[1], '/')
+
+    def test_proc(self):
+        sut = tools.mountArgs('/proc')
+        self.assertGreaterEqual(len(sut), 3)
+        self.assertEqual(sut[0], 'proc')
+        self.assertEqual(sut[1], '/proc')
+        self.assertEqual(sut[2], 'proc')
+
+
+class EncryptableWildcards(unittest.TestCase):
+    def test_has(self):
+        to_test = (
+            'foo',
+            '/foo',
+            'foo/*/bar',
+            'foo/**/bar',
+            '*/foo',
+            '**/foo',
+            'foo/*',
+            'foo/**'
+        )
+
+        for sut in to_test:
+            self.assertFalse(tools.patternHasNotEncryptableWildcard(sut))
+
+    def test_has_not(self):
+        to_test = (
+            'foo?',
+            'foo[1-2]',
+            'foo*',
+            '*foo',
+            '**foo',
+            '*.foo',
+            'foo*bar',
+            'foo**bar',
+            'foo*/bar',
+            'foo**/bar',
+            'foo/*bar',
+            'foo/**bar',
+            'foo/*/bar*',
+            '*foo/*/bar'
+        )
+
+        for sut in to_test:
+            self.assertTrue(tools.patternHasNotEncryptableWildcard(sut))
+
+
+class EscapeIPv6(unittest.TestCase):
     def test_escaped(self):
         values_and_expected = (
             ('fd00:0::5', '[fd00:0::5]'),
@@ -622,26 +500,31 @@ class Environ(generic.TestCase):
                 self.assertEqual(test_env.strValue(k), str(i), msg)
 
 
-class ExecuteSubprocess(generic.TestCase):
-    # new method with subprocess
+class ExecuteSubprocess(unittest.TestCase):
+    def setUp(self):
+        self.run = False
+
+    def _callback(self, func, *args):
+        func(*args)
+        self.run = True
+
     def test_returncode(self):
         self.assertEqual(tools.Execute(['true']).run(), 0)
         self.assertEqual(tools.Execute(['false']).run(), 1)
 
-    def test_callback(self):
-        c = lambda x, y: self.callback(self.assertEqual, x, 'foo')
+    def test_callback_simple(self):
+        c = lambda x, y: self._callback(self.assertEqual, x, 'foo')
         tools.Execute(['echo', 'foo'], callback=c).run()
         self.assertTrue(self.run)
-        self.run = False
 
-        # give extra user_data for callback
-        c = lambda x, y: self.callback(self.assertEqual, x, y)
+    def test_callback_extra_user_data(self):
+        c = lambda x, y: self._callback(self.assertEqual, x, y)
         tools.Execute(['echo', 'foo'], callback=c, user_data='foo').run()
         self.assertTrue(self.run)
         self.run = False
 
-        # no output
-        c = lambda x, y: self.callback(self.fail,
+    def test_callback_no_output(self):
+        c = lambda x, y: self._callback(self.fail,
                                        'callback was called unexpectedly')
         tools.Execute(['true'], callback=c).run()
         self.assertFalse(self.run)

@@ -15,7 +15,10 @@
 # mainly "share-path" and "config" (path to the config file).
 # Otherwise e.g. unit tests or special user path settings may lead to
 # wrong status info in the systray icon!
+"""Plugin starting the systray icon process
 
+Dev note (buhtz, 2025-07): Not sure why this is needed.
+"""
 import sys
 import os
 import pluginmanager
@@ -33,6 +36,8 @@ if not os.getenv('DISPLAY', ''):
 
 
 class SysTrayIconPlugin(pluginmanager.Plugin):
+    """A Back In Time plugin responsible to start the systray icon instance"""
+
     def __init__(self):
         self.process = None
         self.snapshots = None
@@ -79,7 +84,8 @@ class SysTrayIconPlugin(pluginmanager.Plugin):
     def processBegin(self):
         try:
             logger.debug('Trying to start systray icon sub process...')
-            path = os.path.join(tools.backintimePath('qt'), 'qtsystrayicon.py')
+            path = os.path.join(
+                tools.as_backintime_path('qt'), 'qtsystrayicon.py')
             cmd = [
                 sys.executable,
                 path,
@@ -95,13 +101,18 @@ class SysTrayIconPlugin(pluginmanager.Plugin):
         except Exception as exc:
             logger.critical(f'Undefined situation: {exc}', self)
 
-    def processEnd(self):
-        if not self.process is None:
-            try:
-                # The "qtsystrayicon.py" app does terminate itself
-                # once the snapshot has been taken so there is no need
-                # to do anything here to stop it or clean-up anything.
-                # self.process.terminate()
-                return
-            except:
-                pass
+    # def processEnd(self):
+    #     """Dev note(2025-07, buhtz): Method makes no sense to me anymore.
+    #     Remove it soon.
+    #     """
+    #     if self.process is not None:
+    #         try:
+    #             # The "qtsystrayicon.py" app does terminate itself
+    #             # once the snapshot has been taken so there is no need
+    #             # to do anything here to stop it or clean-up anything.
+    #             # self.process.terminate()
+    #             return
+
+    #         # ???
+    #         except:
+    #             pass
